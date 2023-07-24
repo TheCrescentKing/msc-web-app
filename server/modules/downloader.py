@@ -1,3 +1,4 @@
+import pathlib
 from modules.cmr_api import GranuleDownload
 
 
@@ -11,3 +12,8 @@ def findReflectanceFiles(lat, lon, start_date, end_date = ""):
 def getAll():
     granuleDownloader = GranuleDownload(doi=MIN_DOI)
     return granuleDownloader.getAll()
+
+def download(granuleUrl, fileName):
+    granuleDownloader = GranuleDownload(doi=MIN_DOI)
+    data_dir = pathlib.Path().resolve() / "data" / fileName
+    return granuleDownloader.download(granuleUrl, data_dir)

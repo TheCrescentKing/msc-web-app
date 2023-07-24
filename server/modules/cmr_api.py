@@ -1,3 +1,6 @@
+import os
+import pathlib
+from netrc import netrc
 import requests
 import pandas as pd
 from datetime import datetime as dt
@@ -78,7 +81,21 @@ class GranuleDownload:
 		# Filter results by file name
 		cmr_results_df = cmr_results_df[cmr_results_df.name.str.contains('_MIN_')]
 
+		self._addDownloadData(cmr_results_df)		
+		# end for
+
 		return cmr_results_df
+
+	def _addDownloadData(self, dataframe):
+		data_dir = pathlib.Path().resolve() / "data"
+		filenames = next(os.walk(data_dir), (None, None, []))[2]  # [] if no file
+		values = []
+		for item in dataframe['name']:
+			isDownloaded = item in filenames
+			values.append(isDownloaded)
+		dataframe['isDownloaded'] = values
+		return values
+			
 
 	def getAll(self, page_num = 1):
 		concept_id = requests.get(self.doiUrl).json()['feed']['entry'][0]['id']
@@ -115,3 +132,43 @@ class GranuleDownload:
 		granuleDataframe = self._granuleArrayToDataframe(granule_arr)
 
 		return granuleDataframe
+
+	def download(self, url, fpath):
+		"""Download a file from the given url to the target file path.
+		Parameters
+		----------
+		url : str
+			The url of the file to download.
+		fpath : str
+			The fully-qualified path where the file will be downloaded.
+		"""
+
+		urs = 'urs.earthdata.nasa.gov'
+
+		try:
+			netrcDir = os.path.expanduser("~/.netrc")
+			netrc(netrcDir).authenticators(urs)[0]
+		except FileNotFoundError:
+			print('netRC file not found')
+			exit()
+
+		# Streaming, so we can iterate over the response.
+		r = requests.get(url, verify=True, stream=True, auth=(netrc(netrcDir).authenticators(urs)[0], netrc(netrcDir).authenticators(urs)[2]))
+		# r = requests.get(url, verify=False, stream=True, auth=("TheCrescentKing", "fXe6##gh9dSto@q#"))
+		if r.status_code != 200:
+			return "Error, file not downloaded.\n" + r.reason
+		# Total size in bytes.
+		total_size = int(r.headers.get('content-length', 0))
+		block_size = 1024  # 1 Kibibyte
+		totalDownloaded = 0
+		# progress_bar = tqdm(total=total_size, unit='iB', unit_scale=True)
+		with open(fpath, 'wb') as f:
+			for data in r.iter_content(block_size):
+				# progress_bar.update(len(data))
+				totalDownloaded += len(data)
+				f.write(data)
+		# progress_bar.close()
+		if total_size != 0 and totalDownloaded != total_size:
+			print("Error! Something went wrong during download.")
+
+		return "File downloaded"

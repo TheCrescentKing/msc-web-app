@@ -1,7 +1,7 @@
 <template>
 	<div class="container">
 		<div id="map"></div>
-		<!-- <granule-popup :granule="selectedGranule" v-show="false" ref="popup" /> -->
+		<granule-popup :granule="selectedGranule" v-if="showGranuleInfo" />
 	</div>
 </template>
 
@@ -12,14 +12,11 @@ import TileLayer from "ol/layer/Tile.js";
 import View from "ol/View.js";
 import Polygon from "ol/geom/Polygon.js";
 
-import axios from "axios";
 import GranulePopup from "./templates/GranulePopup.vue";
-import VectorTileLayer from "ol/layer/VectorTile";
 import VectorSource from "ol/source/Vector";
 import Style from "ol/style/Style";
 import Stroke from "ol/style/Stroke";
 import Feature from "ol/Feature";
-import BaseVectorLayer from "ol/layer/BaseVector";
 import VectorImageLayer from "ol/layer/VectorImage";
 import { fromLonLat } from "ol/proj";
 
@@ -27,21 +24,29 @@ export default {
 	components: {
 		GranulePopup,
 	},
+
 	name: "Home",
+
 	data() {
 		return {
-			// map: null,
+			map: null,
 			granules: [],
 			granulesLoaded: false,
-			selectedGranule: {},
+			selectedGranule: null,
 			zoom: 5,
 		};
 	},
+
+	computed: {
+		showGranuleInfo() {
+			return this.selectedGranule !== null;
+		},
+	},
+
 	methods: {
 		getGranules() {
-			const path = "http://localhost:5001/granules";
-			axios
-				.get(path)
+			httpClient
+				.get("granules")
 				.then((res) => {
 					this.granules = res.data;
 					this.granulesLoaded = true;
@@ -65,8 +70,6 @@ export default {
 				});
 				granule.ol_uid = feature.ol_uid;
 				source.addFeature(feature);
-				// polygon.bindTooltip(granule.name);
-				// polygon.bindPopup(() => this.$refs.popup.$el);
 			});
 
 			const layer = new VectorImageLayer({
@@ -79,13 +82,12 @@ export default {
 					}),
 				}),
 			});
-
-			// this.map.addLayer(layer);
 		},
 	},
 
 	mounted() {
 		this.getGranules();
+
 		this.map = new Map({
 			target: "map",
 			layers: [
@@ -98,13 +100,15 @@ export default {
 				zoom: 5,
 			}),
 		});
+
 		const self = this;
+
 		this.map.on("pointermove", function (event) {
 			self.map.forEachFeatureAtPixel(
 				event.pixel,
 				function (feature) {
 					const granule = self.granules.find((g) => g.ol_uid === feature.ol_uid);
-					console.log("granule:", granule);
+					self.selectedGranule = granule;
 				},
 				{
 					hitTolerance: 2,
