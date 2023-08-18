@@ -1,1 +1,6 @@
 @import "../../node_modules/ol/ol.css";
+
+iframe {
+	width: 1px;
+	min-width: 100%;
+}

@@ -15,4 +15,17 @@ app.mount('#app')
 const httpClient = axios.create({
 	baseURL: 'http://localhost:5001/',
 });
+
+// before a request is made start the nprogress
+httpClient.interceptors.request.use(config => {
+	NProgress.start()
+	return config
+})
+
+// before a response is returned stop nprogress
+httpClient.interceptors.response.use(response => {
+	NProgress.done()
+	return response
+})
+
 window.httpClient = httpClient

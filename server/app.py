@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 import modules.downloader as granules
+import modules.plot_loader as plotter
 
 
 # instantiate the app
@@ -12,7 +13,6 @@ app.config.from_object(__name__)
 CORS(app, resources={r'/*': {'origins': '*'}})
 
 
-# sanity check route
 @app.route("/granules")
 def allGranules():
 	dataframe = granules.getAll()
@@ -29,6 +29,11 @@ def download():
         return result
     else:
         return 'Content-Type not supported!'
+    
+@app.route("/mineral-map/<fileName>", methods=['GET'])
+def getMineralMap(fileName):
+	html = plotter.mineralMap(fileName + '.nc', 2)
+	return html
 
 if __name__ == '__main__':
     app.run()

@@ -1,7 +1,11 @@
 <template>
 	<div class="container">
 		<div id="map"></div>
-		<granule-popup :granule="selectedGranule" v-if="showGranuleInfo" />
+		<granule-popup
+			:granule="selectedGranule"
+			v-if="showGranuleInfo"
+			@granule-downloaded="granuleDownloaded"
+		/>
 	</div>
 </template>
 
@@ -19,6 +23,25 @@ import Stroke from "ol/style/Stroke";
 import Feature from "ol/Feature";
 import VectorImageLayer from "ol/layer/VectorImage";
 import { fromLonLat } from "ol/proj";
+import XYZ from "ol/source/XYZ";
+import Fill from "ol/style/Fill";
+
+const OUTLINE_STYLE = new Style({
+	stroke: new Stroke({
+		color: "red",
+		width: 1,
+	}),
+});
+
+const FILL_STYLE = new Style({
+	stroke: new Stroke({
+		color: "red",
+		width: 1,
+	}),
+	fill: new Fill({
+		color: "red",
+	}),
+});
 
 export default {
 	components: {
@@ -33,6 +56,7 @@ export default {
 			granules: [],
 			granulesLoaded: false,
 			selectedGranule: null,
+			selectedFeature: null,
 			zoom: 5,
 		};
 	},
@@ -78,10 +102,14 @@ export default {
 				style: new Style({
 					stroke: new Stroke({
 						color: "red",
-						width: 4,
+						width: 1,
 					}),
 				}),
 			});
+		},
+
+		granuleDownloaded(granule) {
+			this.granules.find((gran) => gran.name === granule.name).isDownloaded = true;
 		},
 	},
 
@@ -92,7 +120,11 @@ export default {
 			target: "map",
 			layers: [
 				new TileLayer({
-					source: new OSM(),
+					source: new XYZ({
+						url:
+							"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+						maxZoom: 19,
+					}),
 				}),
 			],
 			view: new View({
@@ -107,6 +139,11 @@ export default {
 			self.map.forEachFeatureAtPixel(
 				event.pixel,
 				function (feature) {
+					if (self.selectedFeature) {
+						self.selectedFeature.setStyle(OUTLINE_STYLE);
+					}
+					self.selectedFeature = feature;
+					self.selectedFeature.setStyle(FILL_STYLE);
 					const granule = self.granules.find((g) => g.ol_uid === feature.ol_uid);
 					self.selectedGranule = granule;
 				},

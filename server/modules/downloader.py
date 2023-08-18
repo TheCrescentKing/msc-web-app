@@ -10,7 +10,7 @@ def findReflectanceFiles(lat, lon, start_date, end_date = ""):
     return granuleDownloader.searchByPoint(lon, lat, start_date, end_date)
 
 def getAll():
-    granuleDownloader = GranuleDownload(doi=MIN_DOI)
+    granuleDownloader = GranuleDownload(doi=MIN_DOI, pageSize=1000)
     return granuleDownloader.getAll()
 
 def download(granuleUrl, fileName):

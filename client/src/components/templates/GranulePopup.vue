@@ -11,12 +11,21 @@
 			</dd>
 		</dl>
 		<button v-if="!granule.isDownloaded" @click="download">Download</button>
-		<i v-else>Downloaded</i>
+		<div v-else>
+			<button @click="viewMineralMap">View mineral map</button>
+		</div>
+		<PlotData v-if="showPlot" :plot-data="plotData" @close="closePlot" />
 	</div>
 </template>
 
 <script>
+import PlotData from "./PlotData.vue";
+
 export default {
+	components: {
+		PlotData,
+	},
+
 	props: {
 		granule: {
 			type: Object,
@@ -24,13 +33,37 @@ export default {
 		},
 	},
 
+	data() {
+		return {
+			plotData: {},
+			showPlot: false,
+			isDownloading: false,
+		};
+	},
+
 	methods: {
 		download() {
-			httpClient.post("download", {
-				name: this.granule.name,
-				url: this.granule.asset_url,
-			});
+			this.isDownloading = true;
+			httpClient
+				.post("download", {
+					name: this.granule.name,
+					url: this.granule.asset_url,
+				})
+				.then((res) => {
+					this.$emit("granule-downloaded", this.granule);
+					this.isDownloading = false;
+				});
 			// console.log(this.granule.asset_url);
+		},
+		viewMineralMap() {
+			const urlSafe = this.granule.name.replace(".nc", "");
+			httpClient.get("mineral-map/" + urlSafe).then((res) => {
+				this.plotData = res.data;
+				this.showPlot = true;
+			});
+		},
+		closePlot() {
+			this.showPlot = false;
 		},
 	},
 };
