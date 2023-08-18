@@ -154,7 +154,6 @@ class GranuleDownload:
 
 		# Streaming, so we can iterate over the response.
 		r = requests.get(url, verify=True, stream=True, auth=(netrc(netrcDir).authenticators(urs)[0], netrc(netrcDir).authenticators(urs)[2]))
-		# r = requests.get(url, verify=False, stream=True, auth=("TheCrescentKing", "fXe6##gh9dSto@q#"))
 		if r.status_code != 200:
 			return "Error, file not downloaded.\n" + r.reason
 		# Total size in bytes.
